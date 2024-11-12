@@ -60,7 +60,7 @@ class scale_block(nn.Module):
             self.encode_layers.append(TwoStageAttentionLayer(seg_num, factor, d_model, n_heads, \
                                                         d_ff, dropout))
     
-    def forward(self, x):
+    def forward(self, x): # (B, C, patch_dim, d_model)
         _, ts_dim, _, _ = x.shape
 
         if self.merge_layer is not None:
@@ -86,7 +86,7 @@ class Encoder(nn.Module):
             self.encode_blocks.append(scale_block(win_size, d_model, n_heads, d_ff, block_depth, dropout,\
                                             ceil(in_seg_num/win_size**i), factor))
 
-    def forward(self, x):
+    def forward(self, x): # (B, C, patch_dim, d_model)
         encode_x = []
         encode_x.append(x)
         

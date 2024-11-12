@@ -44,21 +44,24 @@ class Crossformer(nn.Module):
         self.decoder = Decoder(seg_len, e_layers + 1, d_model, n_heads, d_ff, dropout, \
                                     out_seg_num = (self.pad_out_len // seg_len), factor = factor)
         
-    def forward(self, x_seq):
+    def forward(self, x_seq): # （B，L，C）
         if (self.baseline):
             base = x_seq.mean(dim = 1, keepdim = True)
         else:
             base = 0
         batch_size = x_seq.shape[0]
-        if (self.in_len_add != 0):
+        # 如果无法平均分段（因为有多余的),则取开头第一个元素复制in_len_add次然后填充，具体看论文附录D1
+        if (self.in_len_add != 0): 
             x_seq = torch.cat((x_seq[:, :1, :].expand(-1, self.in_len_add, -1), x_seq), dim = 1)
 
-        x_seq = self.enc_value_embedding(x_seq)
-        x_seq += self.enc_pos_embedding
+        # embedding和patchtst很像
+        x_seq = self.enc_value_embedding(x_seq) # (B, C, patch_dim, d_model)
+        x_seq += self.enc_pos_embedding # + (1, C, patch_dim, d_model)
         x_seq = self.pre_norm(x_seq)
         
         enc_out = self.encoder(x_seq)
-
+        
+        # 在batch_size纬度重复
         dec_in = repeat(self.dec_pos_embedding, 'b ts_d l d -> (repeat b) ts_d l d', repeat = batch_size)
         predict_y = self.decoder(dec_in, enc_out)
 

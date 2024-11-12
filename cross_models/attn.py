@@ -90,17 +90,20 @@ class TwoStageAttentionLayer(nn.Module):
                                 nn.GELU(),
                                 nn.Linear(d_ff, d_model))
 
-    def forward(self, x):
+    def forward(self, x): # (B, C, patch_dim, d_model)
         #Cross Time Stage: Directly apply MSA to each dimension
         batch = x.shape[0]
-        time_in = rearrange(x, 'b ts_d seg_num d_model -> (b ts_d) seg_num d_model')
+        # 对不同的patch进行自注意力
+        time_in = rearrange(x, 'b ts_d seg_num d_model -> (b ts_d) seg_num d_model') # (B * C, patch_dim, d_model)
         time_enc = self.time_attention(
             time_in, time_in, time_in
         )
+        
+        # 进行一系列dropout和正则化
         dim_in = time_in + self.dropout(time_enc)
         dim_in = self.norm1(dim_in)
         dim_in = dim_in + self.dropout(self.MLP1(dim_in))
-        dim_in = self.norm2(dim_in)
+        dim_in = self.norm2(dim_in) # (B * C, patch_dim, d_model)
 
         #Cross Dimension Stage: use a small set of learnable vectors to aggregate and distribute messages to build the D-to-D connection
         dim_send = rearrange(dim_in, '(b ts_d) seg_num d_model -> (b seg_num) ts_d d_model', b = batch)
