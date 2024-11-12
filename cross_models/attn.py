@@ -106,15 +106,17 @@ class TwoStageAttentionLayer(nn.Module):
         dim_in = self.norm2(dim_in) # (B * C, patch_dim, d_model)
 
         #Cross Dimension Stage: use a small set of learnable vectors to aggregate and distribute messages to build the D-to-D connection
-        dim_send = rearrange(dim_in, '(b ts_d) seg_num d_model -> (b seg_num) ts_d d_model', b = batch)
-        batch_router = repeat(self.router, 'seg_num factor d_model -> (repeat seg_num) factor d_model', repeat = batch)
-        dim_buffer = self.dim_sender(batch_router, dim_send, dim_send)
-        dim_receive = self.dim_receiver(dim_send, dim_buffer, dim_buffer)
-        dim_enc = dim_send + self.dropout(dim_receive)
-        dim_enc = self.norm3(dim_enc)
-        dim_enc = dim_enc + self.dropout(self.MLP2(dim_enc))
-        dim_enc = self.norm4(dim_enc)
+        # dim_send = rearrange(dim_in, '(b ts_d) seg_num d_model -> (b seg_num) ts_d d_model', b = batch)
+        # batch_router = repeat(self.router, 'seg_num factor d_model -> (repeat seg_num) factor d_model', repeat = batch)
+        # dim_buffer = self.dim_sender(batch_router, dim_send, dim_send)
+        # dim_receive = self.dim_receiver(dim_send, dim_buffer, dim_buffer)
+        # dim_enc = dim_send + self.dropout(dim_receive)
+        # dim_enc = self.norm3(dim_enc)
+        # dim_enc = dim_enc + self.dropout(self.MLP2(dim_enc))
+        # dim_enc = self.norm4(dim_enc)
 
-        final_out = rearrange(dim_enc, '(b seg_num) ts_d d_model -> b ts_d seg_num d_model', b = batch)
+        # final_out = rearrange(dim_enc, '(b seg_num) ts_d d_model -> b ts_d seg_num d_model', b = batch)
+
+        final_out = rearrange(dim_in, '(b seg_num) ts_d d_model -> b ts_d seg_num d_model', b = batch)
 
         return final_out
